@@ -1,23 +1,35 @@
 // index.js
 const express = require('express');
 const app = express();
+const cors = require("cors");
+const route = require("./routes");
+const connectDB = require('./db');
+connectDB();
 
 // Middleware to parse JSON requests
 app.use(express.json());
 
-// Test route
-app.get('/', (req, res) => {
-  res.send('Hello, Node.js App is running 🚀');
-});
+// Enable CORS
+app.use(cors());
+// app.options("/*", cors());
 
-// Example API route
-app.get('/api/clinics', (req, res) => {
-  res.json([
-    { id: 1, name: 'City Clinic', subscription: 'ACTIVE' },
-    { id: 2, name: 'Green Hospital', subscription: 'EXPIRED' }
-  ]);
-});
+app.use(route);
+
+// Test route
+
 
 // Start server
-const PORT = process.env.PORT || 6000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const PORT = process.env.PORT || 6010;
+const HOST = process.env.HOST || 'localhost';
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, HOST, function (err) {
+      if (err) {
+        console.log("Failed to start the server " + err);
+      }
+      console.log(
+        "Clinic-Admin Module is running on http://" +
+          HOST +
+          ":" +
+          PORT
+      );
+    });
