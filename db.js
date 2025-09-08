@@ -1,13 +1,18 @@
 const mongoose = require('mongoose');
-
-const connectDB = async () => {
-  try {
-    await mongoose.connect('mongodb+srv://harishdandu:jZ1YTRmw3RBFBX3s@cluster0.wlq4n0w.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0');
-    console.log('MongoDB Connected ✅');
-  } catch (err) {
-    console.error(err.message);
-    process.exit(1);
-  }
+const dbURI = 'mongodb+srv://harishdandu:jZ1YTRmw3RBFBX3s@cluster0.wlq4n0w.mongodb.net/sample_mflix?retryWrites=true&w=majority&appName=Cluster0';
+const options = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 };
+const connection = mongoose.createConnection(dbURI, options);
 
-module.exports = connectDB;
+connection.on('connected', () => {
+  console.log('Mongoose connected');
+});
+connection.on('error', (err) => {
+  console.log('Mongoose connection error: ' + err);
+});
+connection.on('disconnected', () => {
+  console.log('Mongoose disconnected');
+});
+module.exports = connection;

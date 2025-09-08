@@ -3,8 +3,8 @@ const express = require('express');
 const app = express();
 const cors = require("cors");
 const route = require("./routes");
-const connectDB = require('./db');
-connectDB();
+// const connectDB = require('./db');
+// connectDB();
 
 // Middleware to parse JSON requests
 app.use(express.json());
