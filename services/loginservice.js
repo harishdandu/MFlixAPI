@@ -1,6 +1,8 @@
 const users = require("../models/usermodel");
 const bcrypt = require("bcrypt");
+const jwt = require('jsonwebtoken');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'ARCHENTS@123';
 
 async function fcnLogin(
     data
@@ -17,8 +19,15 @@ async function fcnLogin(
         if (!isMatch) {
             return { message: "Invalid Password.", statusCode: "F" };
         }
+        const payload = {
+            id: user._id,
+            email: user.email,
+            name: user.name,
+        };
+
+        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
         // console.log(usersData);
-        return { message: "Login successful", user: user, statusCode: "S" };
+        return { message: "Login successful", user: user, token: token, statusCode: "S" };
     } catch (err) {
         logger.error("Error: " + err);
         throw err;
