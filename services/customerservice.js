@@ -10,7 +10,7 @@ async function fcnGetAllCustomers(
         const pageNo = data.pageNo;
         const limit = data.pageSize;
         const searchText = data.searchText;
-
+        console.log("data in service------------------");
         // Build query object
         let query = {};
 
@@ -25,7 +25,8 @@ async function fcnGetAllCustomers(
         // Convert pageNo and limit to integers
         const pageNumber = parseInt(pageNo, 10);
         const limitNumber = parseInt(limit, 10);
-
+        console.log("pageNumber", pageNumber);
+        console.log("limitNumber", limitNumber);
         // Fetch customers with pagination
         const customersData = await customers.find(query)
             .skip(pageNumber * limitNumber)
@@ -88,9 +89,19 @@ async function fcnGetTransactionsByAccountNo(
 async function fcnGetProductDetais(data){
     try{
         const searchText = data.searchText;
+        console.log("data in service$$$$$$$$$$$$$$$$$$$$$$", data);
+        const pageNo = data.page || 0;
+        const limit = data.rowsPerPage || 10;
+        // const pageNo = 0;
+        // const limit = 10;
+        
         if (!searchText) {
             throw new Error("searchText is required");
         }
+
+        // Convert pageNo and limit to integers
+        const pageNumber = parseInt(pageNo, 10);
+        const limitNumber = parseInt(limit, 10);
 
         const pipeline = [
             {
@@ -158,14 +169,97 @@ async function fcnGetProductDetais(data){
                     email: 1,
                     _id: 0
                 }
+            },
+            {
+                $skip: pageNumber * limitNumber
+            },
+            {
+                $limit: limitNumber
             }
         ];
 
-        const result = await accounts.aggregate(pipeline).exec();
-        console.log("Aggregation result:", result);
-        return result;
+        // Create a separate pipeline for counting total documents
+        const countPipeline = [
+            {
+                $match: {
+                    products: {
+                        $elemMatch: {
+                            $regex: searchText,
+                            $options: "i"
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "customers",
+                    localField: "account_id",
+                    foreignField: "accounts",
+                    as: "customerInfo"
+                }
+            },
+            {
+                $unwind: "$customerInfo"
+            },
+            {
+                $addFields: {
+                    matchedProduct: {
+                        $first: {
+                            $filter: {
+                                input: "$products",
+                                as: "product",
+                                cond: {
+                                    $regexMatch: {
+                                        input: "$$product",
+                                        regex: searchText,
+                                        options: "i"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    product: "$matchedProduct",
+                    account_id: 1,
+                    name: "$customerInfo.name",
+                    email: "$customerInfo.email",
+                    _id: 0
+                }
+            },
+            {
+                $group: {
+                    _id: "$account_id",
+                    product: { $first: "$product" },
+                    name: { $first: "$name" },
+                    email: { $first: "$email" }
+                }
+            },
+            {
+                $count: "totalCount"
+            }
+        ];
+
+        // Execute both pipelines in parallel
+        const [result, countResult] = await Promise.all([
+            accounts.aggregate(pipeline).exec(),
+            accounts.aggregate(countPipeline).exec()
+        ]);
+
+        const totalCount = countResult.length > 0 ? countResult[0].totalCount : 0;
+
+        console.log("Aggregation result:", result.length);
+        return {
+            statusCode: "S",
+            products: result,
+            totalCount: totalCount,
+            pageNo: pageNumber,
+            limit: limitNumber
+        };
     }catch(err){
-        logger.error("Error: " + err);
+        console.log("Error: " + err);
         throw err;
     }
 }

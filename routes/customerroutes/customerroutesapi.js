@@ -41,6 +41,7 @@ router.get("/getProductDetails", async (req, res) => {
     res.status(200).send(data);
   } catch (err) {
     // await sendResponse(err, res);
+    console.log("error in getProductDetails$$$$$$$$$$$$$$$$$$$$$$", err);
     await res.status(500).send({ code: 500, errors: [{ message: "An unexpected error occurred. Please try again." }] });
   }
 });
